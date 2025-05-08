@@ -14,7 +14,7 @@ Bot ID: @NewsGenieBot
 ## 🔧 Setup
 1. Clone this repository:  
 
-
+
 git clone https://github.com/RiaLnN/news-bot.git
 2. Install dependencies:  
 
