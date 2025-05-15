@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 from news import get_news, get_trending_news  # Import the news retrieval functions
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from news import get_news_summary
+from keep_alive import keep_alive
 
+keep_alive()
 
 
 load_dotenv()
