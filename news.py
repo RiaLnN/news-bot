@@ -27,30 +27,25 @@ def get_news_summary(topic):
     """Fetches and summarizes news articles on a given topic."""
     url = "https://newsapi.org/v2/everything"
     params = {
-        "q": topic,
+        "q": f'"{topic}"',    # Точное совпадение фразы
+        "qInTitle": topic,      # Поиск ключевого слова в заголовках
         "sortBy": "publishedAt",
         "language": "en",
-        "pageSize": 3,  # Fetch 3 articles
+        "pageSize": 3,
         "apiKey": NEWS_API_KEY
     }
-
     response = requests.get(url, params=params)
+    # Для отладки можно раскомментировать:
+    # print(f"DEBUG summary URL: {response.url}")
     data = response.json()
-
-    if data["status"] != "ok":
+    if data.get("status") != "ok":
         return []
-
     summaries = []
-    for article in data["articles"]:
-        title = article["title"]
-        url = article["url"]
-        description = article["description"]  # Short article description
-
-        if not description:
-            description = "No summary available."
-
+    for article in data.get("articles", []):
+        title = article.get("title")
+        url = article.get("url")
+        description = article.get("description") or "No summary available."
         summaries.append(f"📰 *{title}*\n_{description}_\n🔗 {url}")
-
     return summaries
 
 def get_trending_news():
