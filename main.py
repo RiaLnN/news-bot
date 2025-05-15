@@ -1,6 +1,6 @@
 import json
 import asyncio
-from telegram import Update
+from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import os
 from dotenv import load_dotenv
@@ -8,6 +8,7 @@ from news import get_news, get_trending_news  # Import the news retrieval functi
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from news import get_news_summary
 from keep_alive import keep_alive
+import re
 
 keep_alive()
 
@@ -42,6 +43,22 @@ def save_interests(interests):
     """Save user interests to a file."""
     with open(INTERESTS_FILE, "w") as file:
         json.dump(interests, file)
+def parse_topic_language(arg: str):
+
+    m = re.match(r"^(.*)\((\w{2})\)$", arg)
+    if m:
+        topic = m.group(1).strip()
+        lang = m.group(2).lower()
+        return topic, lang
+
+    m = re.match(r"^(.*)\.(\w{2})$", arg)
+    if m:
+        topic = m.group(1).strip()
+        lang = m.group(2).lower()
+        return topic, lang
+
+
+    return arg.strip(), "en"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Provides users with all available commands and bot capabilities."""
@@ -117,29 +134,22 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(message, parse_mode="Markdown")
 
 async def news(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Fetch news for a given topic and track user interest."""
     if context.args:
-        topic = context.args[0]
-        language = context.args[1] if len(context.args) > 1 else "en"
+        arg = " ".join(context.args)
+        topic, language = parse_topic_language(arg)
 
-        # Track user interests
         user_id = str(update.message.chat_id)
         interests = load_interests()
-        interests[user_id] = interests.get(user_id, []) + [topic]  # Store preferred topics
+        interests[user_id] = interests.get(user_id, []) + [topic]
         save_interests(interests)
 
         articles = get_news(topic, language)
         if articles:
             response = "\n\n".join([f"📰 *{a['title']}*\n{a['url']}" for a in articles])
         else:
-            response = (
-                f"❌ No news available for **'{topic}'** in **'{language}'**.\n"
-                f"Try `/news {topic} en` to check in English!"
-            )
-
+            response = f"❌ No news for '{topic}' in language '{language}'."
     else:
-        response = "Use `/news <topic>` to get relevant news."
-
+        response = "Use /news <topic> (optionally specify language as (en) or .en)"
     await update.message.reply_text(response, parse_mode="Markdown")
 async def trending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Fetches the most popular news headlines."""
@@ -247,27 +257,39 @@ async def recommend(update: Update, context: ContextTypes.DEFAULT_TYPE):
  
 
 
+async def set_my_commands(application):
+    commands = [
+        BotCommand("start", "Start the bot and show info"),
+        BotCommand("help", "Show help message"),
+        BotCommand("news", "Get latest news on topic"),
+        BotCommand("trending", "Show trending news"),
+        BotCommand("summary", "Get news summary"),
+        BotCommand("subscribe", "Subscribe to daily news"),
+        BotCommand("unsubscribe", "Unsubscribe from news"),
+        BotCommand("subscriptions", "View your subscriptions"),
+        BotCommand("recommend", "Get personalized news"),
+    ]
+    await application.bot.set_my_commands(commands)
+
 def main():
-    """Starts the bot and schedules tasks."""
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("news", news))
-    app.add_handler(CommandHandler("trending", trending))
-    app.add_handler(CommandHandler("subscribe", subscribe))
-    app.add_handler(CommandHandler("unsubscribe", unsubscribe))
-    app.add_handler(CommandHandler("subscriptions", view_subscriptions))
-    app.add_handler(CommandHandler("summary", summary))
-    app.add_handler(CommandHandler("recommend", recommend)) 
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("news", news))
+    application.add_handler(CommandHandler("trending", trending))
+    application.add_handler(CommandHandler("subscribe", subscribe))
+    application.add_handler(CommandHandler("unsubscribe", unsubscribe))
+    application.add_handler(CommandHandler("subscriptions", view_subscriptions))
+    # Add other handlers...
 
-    print("Bot is running...")
+    # Set commands in Telegram menu
+    asyncio.run(set_my_commands(application))
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.create_task(schedule_news_delivery(app))
+    # Schedule daily news delivery
+    asyncio.create_task(schedule_news_delivery(application))
 
-    app.run_polling()
+    application.run_polling()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
