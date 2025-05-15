@@ -78,7 +78,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👉 `/help` — Show this list of available commands.\n\n"
 
         "🌍 **New Feature: Multi-Language Support!**\n"
-        "Use `/news <topic> <language_code>` to fetch news in different languages.\n"
+        "Use `/news <topic>.<language_code>` or `/news <topic>(<language_code>) to fetch news in different languages.\n"
         "Example: `/news AI es` → Fetches AI news in Spanish.\n\n"
 
         "💡 **Personalized Recommendations!**\n"
@@ -113,7 +113,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👉 `/help` — Show this list of available commands.\n\n"
 
         "🌍 **Multi-Language Support!**\n"
-        "Use `/news <topic> <language_code>` to fetch news in different languages.\n"
+        "Use `/news <topic>.<language_code>` or `/news <topic>(<language_code>)` to fetch news in different languages.\n"
         "Example: `/news AI es` → Fetches AI news in Spanish.\n\n"
 
         "💡 **How `/recommend` Works**\n"
